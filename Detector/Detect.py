@@ -14,7 +14,8 @@ model = torch.hub.load('ultralytics/yolov5', 'custom',
 #Video captura
 #video = 0
 #video = "http://192.168.0.128:4747/video"
-video = "http://192.168.1.31:9797/videostream.cgi?user=admin&pwd=am3ricas"
+#video = "http://192.168.1.31:9797/videostream.cgi?user=admin&pwd=am3ricas"
+video = "C:/Detector/VIDEO.MOV"
 cap = cv2.VideoCapture(video)
 
 
@@ -42,7 +43,7 @@ while True:
 
     #Extraemos la info
     info = detect.pandas().xyxy[0].to_dict(orient="records")  #  predictions
-    placa = frame.copy()
+
     if len(info) != 0:
 
         #Creamos un for
@@ -62,7 +63,7 @@ while True:
 
                 cv2.rectangle(frame,(x1, y1), (xf, yf), (0, 255, 0), 2)
                 #print(x1,y1, xf,yf)
-                placa = placa[y1:yf, x1:xf]
+                placa = frame[y1:yf, x1:xf]
 
                 #Extraemos el anocho  y el alto
                 alp, anp, cp = placa.shape
@@ -78,29 +79,19 @@ while True:
                 mGp = np.matrix(placa[:, :, 1])
                 mRp = np.matrix(placa[:, :, 2])
 
-                Color2 = cv2.absdiff(mBp, mRp, mGp)
-                # Binarizamos l aimagen
-                _, umbral2 = cv2.threshold(Color2, 60, 205, cv2.THRESH_BINARY)
-                #umbral_limpio2 = cv2.dilate(umbral2, None, iterations=1)
-
-                cv2.imshow('umbral_limpio2', umbral2)
-
-
-
                 #Creamos una mascara
                 for col in range(0, alp):
                     for fil in range(0, anp):
                         Max = max(mRp[col, fil], mGp[col, fil], mBp[col, fil])
                         Mva[col,fil] = 255 - Max
                 #Binarizamos la imagen
-                #_, bin = cv2.threshold(Mva, 150, 255, cv2.THRESH_BINARY)
-                _, bin = cv2.threshold(umbral2, 60, 205, cv2.THRESH_BINARY)
+                _, bin = cv2.threshold(Mva, 150, 255, cv2.THRESH_BINARY)
 
                 #Convertimos la matriz en imagen
                 bin = bin.reshape(alp, anp)
                 bin = Image.fromarray(bin)
-                bin = bin.convert("L")
-
+                bin = bin.convert("1")
+                cv2.imwrite('C:/Detector/filename.jpeg', Mva)
 
 
                 #Validamos tener un buen tamaño de placas
@@ -108,7 +99,7 @@ while True:
                 cv2.imshow('Detector de Mva', placa)
                 if alp >= 36 and anp>=82:
                     # Declaramos la direccion de Pyresseract
-                    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+                    pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
                     cv2.imshow('Detector de Mva', Mva)
                     # Extraemos el texto
                     config = "--psm 1"
@@ -121,11 +112,7 @@ while True:
                         print(Ctexto)
                 break
 
-    #contornos, _ = cv2.findContours(detect, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-
-    #print(info)
-    #print(x,y,ancho,alto)
 
     # Mostramos FPS
     cv2.imshow('Detector de Carros', frame)
