@@ -13,8 +13,8 @@ model = torch.hub.load('ultralytics/yolov5', 'custom',
 
 # Video captura
 # video = 0
-# video = "http://192.168.0.128:4747/video"
-video = "http://192.168.1.31:9797/videostream.cgi?user=admin&pwd=am3ricas"
+video = "http://192.168.0.107:9797/videostream.cgi?user=admin&pwd=am3ricas"
+#video = "http://192.168.1.31:9797/videostream.cgi?user=admin&pwd=am3ricas"
 # video = "C:/Detector/vid1.mp4"
 cap = cv2.VideoCapture(video)
 
@@ -71,9 +71,26 @@ while True:
 
                 placa = placa[y2:yf2, x2:xf2]
 
-                cv2.imshow('placa', placa)
+                frameHSV = cv2.cvtColor(placa, cv2.COLOR_BGR2HSV)
+                mBph = np.matrix(frameHSV[:, :, 0])
+                mGph = np.matrix(frameHSV[:, :, 1])
+                mRph = np.matrix(frameHSV[:, :, 2])
+
+                #print("mBph ", mBph, " mGph ", mGph, " mRph ", mRph),
 
 
+
+                # Elegimos el umbral de verde en HSV
+                umbral_bajo = (10, 150, 0)
+                umbral_alto = (79, 155, 255)
+                umbral_bajo2 = (0, 0, 188)
+                umbral_alto2 = (0, 0, 0)
+                # hacemos la mask y filtramos en la original
+                mask = cv2.inRange(frameHSV, umbral_bajo, umbral_alto)
+                mask2= cv2.inRange(frameHSV, umbral_bajo2, umbral_alto2)
+                res = cv2.bitwise_and(frameHSV, frameHSV, mask=mask2)
+
+                cv2.imshow('placa', mask)
 
                 # Extraemos el anocho  y el alto
                 alp, anp, cp = placa.shape
@@ -109,7 +126,7 @@ while True:
 
                 # Validamos tener un buen tamaño de placas
 
-                cv2.imshow('Detector de Mva', Mva)
+                #cv2.imshow('Detector de Mva', Mva)
                 placa_bin = placa.copy()
 
 
