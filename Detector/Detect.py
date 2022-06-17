@@ -15,7 +15,7 @@ model = torch.hub.load('ultralytics/yolov5', 'custom',
 # video = 0
 # video = "http://192.168.0.128:4747/video"
 video = "http://192.168.1.31:9797/videostream.cgi?user=admin&pwd=am3ricas"
-# video = "C:/Detector/vid1.mp4"
+#video = "C:/Detector/vid1.mp4"
 cap = cv2.VideoCapture(video)
 
 x1 = 10
@@ -23,13 +23,61 @@ y1 = 10
 xf = 10
 yf = 10
 
-# Empezamos
+# Empezamos funciones
+#Asignar brillo a la iamgen segun sus datos
+def convertirEscala(img, alpha, beta):
+    new_img = img * alpha + beta
+    new_img[new_img < 0] = 0
+    new_img[new_img > 255] = 255
+    #print(alpha, beta)
+    return new_img.astype(np.uint8)
+
+
+def automatic_brightness_and_contrast(image, clip_hist_percent=10):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Calculate grayscale histogram
+    hist = cv2.calcHist([gray],[0],None,[255],[0,255])
+    hist_size = len(hist)
+
+    # Calculate cumulative distribution from the histogram
+    accumulator = []
+    accumulator.append(float(hist[0]))
+    for index in range(1, hist_size):
+        accumulator.append(accumulator[index -1] + float(hist[index]))
+
+    # Locate points to clip
+    maximum = accumulator[-1]
+    clip_hist_percent *= (maximum/100.0)
+    clip_hist_percent /= 2.0
+
+    # Locate left cut
+    minimum_gray = 0
+    while accumulator[minimum_gray] < clip_hist_percent:
+        minimum_gray += 1
+
+    # Locate right cut
+    maximum_gray = hist_size -1
+    while accumulator[maximum_gray] >= (maximum - clip_hist_percent):
+        maximum_gray -= 1
+
+    # Calculate alpha and beta values
+    alpha = 255 / (maximum_gray - minimum_gray)
+    beta = -minimum_gray * alpha
+    if alpha <2.100:
+        alpha = 0.78
+        beta = -70
+    else:
+        alpha = alpha
+        beta = beta
+    auto_result = convertirEscala(image, alpha=alpha, beta=beta)
+    return (auto_result)
+
+
+#Procesamiento video
 while True:
     # Realizamos lectura de frames
     ret, frame = cap.read()
-
-    # Correccion de color
-    # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     # 10 fotoframas por segundo
     contatof += 1
@@ -60,62 +108,27 @@ while True:
                 yf = int(result['ymax'])
 
                 cv2.rectangle(frame, (x1, y1), (xf, yf), (0, 255, 0), 2)
-                # print(x1,y1, xf,yf)
 
                 y2 = y1 + 23  #Recorte arriba
                 yf2 = yf - 30 #recorta de abajo
                 x2 = x1 + 10  #recorte a la izq
-                xf2 = xf - 10 #recprte a la derec
-
-
+                xf2 = xf + 5 #recprte a la derec
 
                 placa = placa[y2:yf2, x2:xf2]
-
                 cv2.imshow('placa', placa)
-
-
 
                 # Extraemos el anocho  y el alto
                 alp, anp, cp = placa.shape
 
-                # Procesar para eztraer los pixeles
-                Mva = np.zeros((alp, anp))
-
-                # Normalizamos las matrices
-
-                mBp = np.matrix(placa[:, :, 0])
-                mGp = np.matrix(placa[:, :, 1])
-                mRp = np.matrix(placa[:, :, 2])
-
-                Color2 = cv2.absdiff(mBp, mBp)
-                # Binarizamos l aimagen
-                #_, umbral2 = cv2.threshold(Color2, 60, 205, cv2.THRESH_BINARY)
-                # umbral_limpio2 = cv2.dilate(umbral2, None, iterations=1)
-
-                cv2.imshow('umbral_limpio2', Color2)
-
-                # Creamos una mascara
-                for col in range(0, alp):
-                    for fil in range(0, anp):
-                        Max = min(mRp[col, fil], mGp[col, fil], mBp[col, fil])
-                        Mva[col, fil] = 255 + Max
-                # Binarizamos la imagen
-                # _, bin = cv2.threshold(Mva, 150, 255, cv2.THRESH_BINARY)
-                #_, bin = cv2.threshold(umbral2, 60, 205, cv2.THRESH_BINARY)
-
-                # Convertimos la matriz en imagen
-
-
-
-                # Validamos tener un buen tamaño de placas
-
-                cv2.imshow('Detector de Mva', Mva)
+                #cv2.imshow('Detector de Mva', Mva)
                 placa_bin = placa.copy()
-
-
+                placa_bin = automatic_brightness_and_contrast(placa_bin)
+                #Creamos un frame pero de placa en escala de Grises
                 gray = cv2.cvtColor(placa_bin, cv2.COLOR_BGR2GRAY)
-                _, bin = cv2.threshold(gray, 60, 200, cv2.THRESH_BINARY)
-                cv2.imshow('placa_prueba', gray)
+                #Binarisamos para darle mas fuerza al color negro
+                _, bin = cv2.threshold(gray, 50, 200, cv2.THRESH_BINARY)
+                cv2.imshow('placa_prueba21', placa_bin)
+                cv2.imshow('placa_prueba', bin)
 
                 bin = bin.reshape(alp, anp)
                 bin = Image.fromarray(bin)
@@ -130,7 +143,7 @@ while True:
                     config = "--psm 1 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
                     #config = "--psm 1"
                     texto = pytesseract.image_to_string(bin, config=config)
-                    print("aui", texto)
+                    #print("aui", texto)
 
                     # If para no mostrar basura
                     if len(texto) >= 6:
