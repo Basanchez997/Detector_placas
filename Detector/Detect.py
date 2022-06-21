@@ -22,7 +22,7 @@ x1 = 10
 y1 = 10
 xf = 10
 yf = 10
-
+id = 0
 # Empezamos funciones
 #Asignar brillo a la iamgen segun sus datos
 def convertirEscala(img, alpha, beta):
@@ -73,6 +73,17 @@ def automatic_brightness_and_contrast(image, clip_hist_percent=10):
     auto_result = convertirEscala(image, alpha=alpha, beta=beta)
     return (auto_result)
 
+def detect_model(frame, id):
+    # Realizamos las detecciones
+    if(id <= 0):
+
+        detect = model(frame)
+
+    # Extraemos la info
+        info = detect.pandas().xyxy[0].to_dict(orient="records")  # predictions
+        print("xdddd",id)
+
+    return info
 
 #Procesamiento video
 while True:
@@ -85,10 +96,13 @@ while True:
         continue
 
     # Realizamos las detecciones
-    detect = model(frame)
+    #detect = model(frame)
 
     # Extraemos la info
-    info = detect.pandas().xyxy[0].to_dict(orient="records")  # predictions
+    #info = detect.pandas().xyxy[0].to_dict(orient="records")  # predictions
+
+    info = detect_model(frame, id)
+    id += 1
     placa = frame.copy()
     if len(info) != 0:
 
