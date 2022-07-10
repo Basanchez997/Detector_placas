@@ -85,6 +85,7 @@ def detect_model(frame, id):
 
     return info
 
+
 #Procesamiento video
 while True:
     # Realizamos lectura de frames
