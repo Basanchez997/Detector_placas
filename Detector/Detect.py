@@ -12,10 +12,12 @@ model = torch.hub.load('ultralytics/yolov5', 'custom',
                        path='C:/Detector/model/placas.pt')
 
 # Video captura
-# video = 0
+video = 0
 # video = "http://192.168.0.128:4747/video"
-video = "http://192.168.1.31:9797/videostream.cgi?user=admin&pwd=am3ricas"
+#video = "http://192.168.1.31:9797/videostream.cgi?user=admin&pwd=am3ricas"
 #video = "C:/Detector/vid1.mp4"
+#video = "http://192.168.0.128:4747/video"
+
 cap = cv2.VideoCapture(video)
 
 x1 = 10
@@ -64,26 +66,23 @@ def automatic_brightness_and_contrast(image, clip_hist_percent=10):
     # Calculate alpha and beta values
     alpha = 255 / (maximum_gray - minimum_gray)
     beta = -minimum_gray * alpha
-    if alpha <2.100:
-        alpha = 0.78
-        beta = -70
+
+    #print("alpha antes " , alpha)
+    #print("Beta antes", beta)
+    if beta <-70 :
+        alpha = alpha
+        beta = beta/2
+    elif beta<-7 :
+        alpha = alpha
+        beta = beta-50
     else:
         alpha = alpha
         beta = beta
     auto_result = convertirEscala(image, alpha=alpha, beta=beta)
+    #print("alpha", alpha)
+    #print("Beta", beta)
     return (auto_result)
 
-def detect_model(frame, id):
-    # Realizamos las detecciones
-    if(id <= 0):
-
-        detect = model(frame)
-
-    # Extraemos la info
-        info = detect.pandas().xyxy[0].to_dict(orient="records")  # predictions
-        print("xdddd",id)
-
-    return info
 
 
 #Procesamiento video
@@ -97,13 +96,13 @@ while True:
         continue
 
     # Realizamos las detecciones
-    #detect = model(frame)
+    detect = model(frame)
 
     # Extraemos la info
-    #info = detect.pandas().xyxy[0].to_dict(orient="records")  # predictions
+    info = detect.pandas().xyxy[0].to_dict(orient="records")  # predictions
 
-    info = detect_model(frame, id)
-    id += 1
+    #info = detect_model(frame, id)
+    #id += 1
     placa = frame.copy()
     if len(info) != 0:
 
@@ -124,13 +123,14 @@ while True:
 
                 cv2.rectangle(frame, (x1, y1), (xf, yf), (0, 255, 0), 2)
 
-                y2 = y1 + 23  #Recorte arriba
-                yf2 = yf - 30 #recorta de abajo
-                x2 = x1 + 10  #recorte a la izq
-                xf2 = xf + 5 #recprte a la derec
+                y2 = y1 + 19  #Recorte arriba
+                yf2 = yf - 29 #recorta de abajo
+                x2 = x1 + 9  #recorte a la izq
+                xf2 = xf + 5
+                #recprte a la derec
 
                 placa = placa[y2:yf2, x2:xf2]
-                cv2.imshow('placa', placa)
+                #cv2.imshow('placa', placa)
 
                 # Extraemos el anocho  y el alto
                 alp, anp, cp = placa.shape
